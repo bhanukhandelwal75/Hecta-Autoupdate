@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Property Cataloging</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .container {
+        width: 80%;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .form-container {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px;
+        background-color: #f9f9f9;
+        box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        box-sizing: border-box;
+        margin-bottom: 20px;
+      }
+      .form-container input[type="text"] {
+        width: 80%;
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      .form-container button {
+        padding: 10px 15px;
+        font-size: 16px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .form-container button:hover {
+        background-color: #0056b3;
+      }
+      .tabs {
+        display: flex;
+        flex-direction: row;
+        margin-bottom: 20px;
+      }
+      .tab {
+        padding: 10px 20px;
+        background-color: #f1f1f1;
+        border: 1px solid #ccc;
+        cursor: pointer;
+        margin-right: 5px;
+      }
+      .tab.active {
+        background-color: #007bff;
+        color: white;
+      }
+      .property-box {
+        display: none;
+        width: 100%;
+        padding: 20px;
+        background-color: #fff;
+        box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        box-sizing: border-box;
+        margin-bottom: 20px;
+      }
+      .property-box.active {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+      }
+      .property-details {
+        width: 60%;
+      }
+      .property-details table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      .property-details table,
+      .property-details th,
+      .property-details td {
+        border: 1px solid #ccc;
+      }
+      .property-details th,
+      .property-details td {
+        padding: 10px;
+        text-align: left;
+      }
+      .property-details input {
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      .map-container {
+        width: 35%;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .map {
+        width: 100%;
+        height: 400px;
+        box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="form-container">
+        <form method="POST" action="/">
+          <input
+            type="text"
+            id="file_path"
+            name="file_path"
+            placeholder="Enter Excel File Path"
+            required
+          />
+          <button type="submit">Submit</button>
+        </form>
+      </div>
+
+      {% if data %}
+      <div class="tabs">
+        {% for row in data %}
+        <div class="tab" onclick="showProperty({{ loop.index }})">
+          Property {{ loop.index }}
+        </div>
+        {% endfor %}
+      </div>
+      {% for row in data %}
+      <div class="property-box" id="property{{ loop.index }}">
+        <div class="property-details">
+          <h2>Property {{ loop.index }}</h2>
+          <h2>Raw Address {{ row[22] }}</h2>
+          <form method="POST" action="/update">
+            <table>
+              <tr>
+                <th>Address</th>
+                <td>
+                  <input
+                    type="text"
+                    name="address"
+                    value="{{ row[0] }}"
+                    onchange="updateMap({{ loop.index }})"
+                  />
+                  <input
+                    type="hidden"
+                    name="original_address"
+                    value="{{ row[0] }}"
+                    onchange="updateMap({{ loop.index }})"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Property Type</th>
+                <td>
+                  <input
+                    type="text"
+                    name="property_type"
+                    value="{{ row[1] }}"
+                  />
+                  <input
+                    type="hidden"
+                    name="original_property_type"
+                    value="{{ row[1] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Property Title</th>
+                <td>
+                  <input
+                    type="text"
+                    name="property_title"
+                    value="{{ row[2] }}"
+                  />
+                  <input
+                    type="hidden"
+                    name="original_property_title"
+                    value="{{ row[2] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>City</th>
+                <td>
+                  <input type="text" name="city" value="{{ row[3] }}" />
+                  <input
+                    type="hidden"
+                    name="original_city"
+                    value="{{ row[3] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>State</th>
+                <td>
+                  <input type="text" name="state" value="{{ row[4] }}" />
+                  <input
+                    type="hidden"
+                    name="original_state"
+                    value="{{ row[4] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Pincode</th>
+                <td>
+                  <input type="text" name="pincode" value="{{ row[5] }}" />
+                  <input
+                    type="hidden"
+                    name="original_pincode"
+                    value="{{ row[5] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Latitude</th>
+                <td>
+                  <input
+                    type="text"
+                    name="latitude"
+                    id="latitude{{ loop.index }}"
+                    value="{{ row[6] }}"
+                    onchange="updateMap({{ loop.index }})"
+                  />
+                  <input
+                    type="hidden"
+                    name="original_latitude"
+                    id="longitude{{ loop.index }}"
+                    value="{{ row[6] }}"
+                    onchange="updateMap({{ loop.index }})"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Longitude</th>
+                <td>
+                  <input
+                    type="text"
+                    name="longitude"
+                    value="{{ row[7] }}"
+                    onchange="updateMap({{ loop.index }})"
+                  />
+                  <input
+                    type="hidden"
+                    name="original_longitude"
+                    value="{{ row[7] }}"
+                    onchange="updateMap({{ loop.index }})"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Location Type</th>
+                <td>
+                  <input
+                    type="text"
+                    name="location_type"
+                    value="{{ row[8] }}"
+                  />
+                  <input
+                    type="hidden"
+                    name="original_location_type"
+                    value="{{ row[8] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Street View</th>
+                <td>
+                  <input
+                    type="text"
+                    name="street_view"
+                    id="street_view{{ loop.index }}"
+                    value="{{ row[9] }}"
+                    onchange="updateMap({{ loop.index }})"
+                  />
+                  <input
+                    type="hidden"
+                    name="original_street_view"
+                    id="street_view{{ loop.index }}"
+                    value="{{ row[9] }}"
+                    onchange="updateMap({{ loop.index }})"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Main Amenities</th>
+                <td>
+                  <input
+                    type="text"
+                    name="main_amenities"
+                    value="{{ row[10] }}"
+                  />
+                  <input
+                    type="hidden"
+                    name="original_main_amenities"
+                    value="{{ row[10] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Primary Photo</th>
+                <td>
+                  <input
+                    type="text"
+                    name="primary_photo"
+                    value="{{ row[11] }}"
+                  />
+                  <input
+                    type="hidden"
+                    name="original_primary_photo"
+                    value="{{ row[11] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Locality</th>
+                <td>
+                  <input type="text" name="locality" value="{{ row[12] }}" />
+                  <input
+                    type="hidden"
+                    name="original_locality"
+                    value="{{ row[12] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>SEO Keyword</th>
+                <td>
+                  <input type="text" name="seo_keyword" value="{{ row[13] }}" />
+                  <input
+                    type="hidden"
+                    name="original_seo_keyword"
+                    value="{{ row[13] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>SEO Title</th>
+                <td>
+                  <input type="text" name="seo_title" value="{{ row[14] }}" />
+                  <input
+                    type="hidden"
+                    name="original_seo_title"
+                    value="{{ row[14] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>SEO Description</th>
+                <td>
+                  <input
+                    type="text"
+                    name="seo_description"
+                    value="{{ row[15] }}"
+                  />
+                  <input
+                    type="hidden"
+                    name="original_seo_description"
+                    value="{{ row[15] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Area</th>
+                <td>
+                  <input type="text" name="area" value="{{ row[16] }}" />
+                  <input
+                    type="hidden"
+                    name="original_area"
+                    value="{{ row[16] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Reserve Price</th>
+                <td>
+                  <input
+                    type="text"
+                    name="reserve_price"
+                    value="{{ row[17] }}"
+                  />
+                  <input
+                    type="hidden"
+                    name="original_reserve_price"
+                    value="{{ row[17] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Auction Date</th>
+                <td>
+                  <input
+                    type="text"
+                    name="auction_date"
+                    value="{{ row[18] }}"
+                  />
+                  <input
+                    type="hidden"
+                    name="original_auction_date"
+                    value="{{ row[18] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Borrower</th>
+                <td>
+                  <input type="text" name="borrower" value="{{ row[19] }}" />
+                  <input
+                    type="hidden"
+                    name="original_borrower"
+                    value="{{ row[19] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Bank</th>
+                <td>
+                  <input type="text" name="bank" value="{{ row[20] }}" />
+                  <input
+                    type="hidden"
+                    name="original_bank"
+                    value="{{ row[20] }}"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Possession Status</th>
+                <td>
+                  <input
+                    type="text"
+                    name="possession_status"
+                    value="{{ row[21] }}"
+                  />
+                  <input
+                    type="hidden"
+                    name="original_possession_status"
+                    value="{{ row[21] }}"
+                  />
+                </td>
+              </tr>
+            </table>
+          </form>
+
+          <form
+            method="POST"
+            action="/append"
+            onsubmit="updateHiddenData({{ loop.index }})"
+          >
+            <input
+              type="hidden"
+              id="hidden_data{{ loop.index }}"
+              name="data"
+              value="{{ row }}"
+            />
+            <button type="submit">Append to Excel</button>
+          </form>
+        </div>
+        <div class="map-container">
+          <div id="map{{ loop.index }}" class="map"></div>
+          <div id="street-view{{ loop.index }}" class="map"></div>
+        </div>
+      </div>
+      {% endfor %} {% endif %} {% if error %}
+      <p style="color: red">Error: {{ error }}</p>
+      {% endif %} {% if success %}
+      <p style="color: green">
+        Data has been successfully processed out.Please click on append.
+      </p>
+      {% endif %}
+    </div>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDIRQDHrB5vKPXvhoZDAHLfzLyYdKmAeI4"></script>
+    <script>
+      let maps = [];
+      let markers = [];
+      let streetViewPanoramas = [];
+
+      function initMap() {
+          {% for row in data %}
+              const position{{ loop.index }} = { lat: {{ row[6] }}, lng: {{ row[7] }} };
+              const map{{ loop.index }} = new google.maps.Map(document.getElementById("map{{ loop.index }}"), {
+                  center: position{{ loop.index }},
+                  zoom: 14,
+              });
+
+              const marker{{ loop.index }} = new google.maps.Marker({
+                  position: position{{ loop.index }},
+                  map: map{{ loop.index }},
+              });
+
+              const streetViewPanorama{{ loop.index }} = new google.maps.StreetViewPanorama(
+                  document.getElementById("street-view{{ loop.index }}"),
+                  {
+                      position: position{{ loop.index }},
+                      pov: { heading: 0, pitch: 0 },
+                      zoom: 1,
+                  }
+              );
+
+              map{{ loop.index }}.setStreetView(streetViewPanorama{{ loop.index }});
+
+              streetViewPanorama{{ loop.index }}.addListener("position_changed", function() {
+                  updateFields({{ loop.index }});
+              });
+
+              streetViewPanorama{{ loop.index }}.addListener("pov_changed", function() {
+                  updateFields({{ loop.index }});
+              });
+
+              maps.push(map{{ loop.index }});
+              markers.push(marker{{ loop.index }});
+              streetViewPanoramas.push(streetViewPanorama{{ loop.index }});
+          {% endfor %}
+      }
+
+      function showProperty(index) {
+          const tabs = document.querySelectorAll('.tab');
+          const properties = document.querySelectorAll('.property-box');
+          tabs.forEach(tab => tab.classList.remove('active'));
+          properties.forEach(property => property.classList.remove('active'));
+          document.querySelector(`.tab:nth-child(${index})`).classList.add('active');
+          document.getElementById(`property${index}`).classList.add('active');
+      }
+
+      function updateMap(index) {
+          const latitude = parseFloat(document.getElementById(`latitude${index}`).value);
+          const longitude = parseFloat(document.getElementById(`longitude${index}`).value);
+          const position = { lat: latitude, lng: longitude };
+
+          maps[index - 1].setCenter(position);
+          markers[index - 1].setPosition(position);
+          streetViewPanoramas[index - 1].setPosition(position);
+
+          updateFields(index);
+      }
+
+      function updateFields(index) {
+          const position = streetViewPanoramas[index - 1].getPosition();
+          const latitude = position.lat();
+          const longitude = position.lng();
+          const heading = streetViewPanoramas[index - 1].getPov().heading;
+          const pitch = streetViewPanoramas[index - 1].getPov().pitch;
+
+          document.getElementById(`latitude${index}`).value = latitude;
+          document.getElementById(`longitude${index}`).value = longitude;
+
+          const streetViewIframe = `<iframe src="https://www.google.com/maps/embed?pb=!4v${Date.now()}!6m8!1m7!1s!2m2!1d${latitude}!2d${longitude}!3f${heading}!4f${pitch}!5f0.7820865974627469" width="400" height="300" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+          document.getElementById(`street_view${index}`).value = streetViewIframe;
+      }
+
+        function updateHiddenData(index) {
+            debugger
+            let form = document.getElementById("property" + index);
+            let inputs = form.querySelectorAll("input[type='text']");
+            let updatedData = [];
+
+            inputs.forEach(input => {
+            updatedData.push(input.value);
+            });
+
+            document.getElementById("hidden_data" + index).value = JSON.stringify(updatedData);
+        }
+
+      window.onload = initMap;
+    </script>
+  </body>
+</html>
